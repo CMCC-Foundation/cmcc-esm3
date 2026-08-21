@@ -1,0 +1,54 @@
+#!/usr/bin/bash -l
+
+#
+# activate needed environment modules
+which -a module >/dev/null 2>&1
+stat=$?
+if [ ${stat} -ne 0 ]; then
+  source /etc/profile.d/modules.sh
+fi
+
+#module purge
+#module purge
+if [ -d /cassandra ]; then
+  module load --auto oneapi-2025.0.4/impi-2021.14.2/nco/5.2.4-5qire
+elif [ -d /juno ]; then
+  module load --auto intel-2021.6.0/nco/5.0.6-jp6y4
+fi
+
+# 
+set -e
+
+#----------------------------------------------------------------------
+# export to environment required variables from xml files
+#----------------------------------------------------------------------
+export CASE=`./xmlquery CASE | cut -d ':' -f2 | sed 's/ //g'`
+export CASEROOT=`./xmlquery CASEROOT | cut -d ':' -f2 | sed 's/ //g'`
+export DOUT_S_ROOT=`./xmlquery DOUT_S_ROOT | cut -d ':' -f2 | sed 's/ //g'`
+export DOUT_L_ROOT=`./xmlquery DOUT_L_ROOT | cut -d ':' -f2 | sed 's/ //g'`
+export DATA_PROD=`./xmlquery DATA_PROD | cut -d ':' -f2 | sed 's/ //g'`
+
+export STOP_OPTION=`./xmlquery STOP_OPTION | cut -d ':' -f2 | sed 's/ //g'`
+export RUN_STARTDATE=`./xmlquery RUN_STARTDATE | cut -d ':' -f2 | sed 's/ //g'`
+# this is done here as if lt_archive remain pending, than variable in env_run is updated
+export RUN_CURDATE=`./xmlquery RUN_CURDATE | cut -d ':' -f2 | sed 's/ //g'`
+
+echo "Long term archive folder: $DOUT_L_ROOT"
+
+#----------------------------------------------------------------------
+# Submit long term archive script
+#----------------------------------------------------------------------
+
+lt_script="$CASEROOT/Tools/lt_archive_$DATA_PROD.sh"
+
+if [ ! -f $lt_script ] ; then
+   echo "case.lt_archive: $lt_script not exists. exit."
+   exit 1
+fi
+
+echo "Target date: $RUN_CURDATE"
+echo "Submit long term archive script: $lt_script "
+
+bsub -n 1 -q s_medium -P R000 -M 40GB -J lt_archive_$RUN_CURDATE -o logs/ -e logs/ "$lt_script"
+
+exit 0
