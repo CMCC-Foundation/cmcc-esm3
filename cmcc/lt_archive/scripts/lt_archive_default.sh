@@ -17,7 +17,7 @@ RSTARFREQ=10
 DEFLEV=4
 
 # FORCE PROCESSING YEAR (SET YEAR AND MANUALLY RUN case.lt_archive)
-#USEYEAR=""
+USEYEAR=""
 
 #############################################################
 #  Functions
@@ -299,6 +299,7 @@ wait
 ############################################################# TO CHECK
 ## 3 CLEAN UP HISTORY in the ST_ARCHIVE
 if [ "x${USEYEAR}" == "x" ] ; then
+
     #   -----  CAM  -----
     #
     cmp="atm" ; model="cam"
@@ -306,13 +307,21 @@ if [ "x${USEYEAR}" == "x" ] ; then
     if [ "x${remove_file}" != "x" ] ; then
        rm ${remove_file}
     fi
-    if [ -f ${remove_file} ] ; then
+ 
+    #   -----  NEMO -----
+    #
+    cmp="ocn" ; model="nemo"
+    remove_file=`ls ${st_archive_dir}/${cmp}/hist/run.stat_${curyear}*.nc`
+    if [ "x${remove_file}" != "x" ] ; then
        rm ${remove_file}
     fi
 fi
 
+
 #############################################################
 # 4 REMOVE PREVIOUS RESTART AND COPY TO ARCHIVE EVERY RSTARFREQ
+if [ "x${USEYEAR}" == "x" ] ; then
+
 lstrst=`ls -d ${st_archive_dir}/rest/${nexyear}-[0-9][0-9]-[0-9][0-9]-00000 2> /dev/null `	    
 lstrstn=`ls ${lstrst}/* | wc -l`
 currst=`ls -d ${st_archive_dir}/rest/${curyear}-[0-9][0-9]-[0-9][0-9]-00000 2> /dev/null `		      
@@ -330,6 +339,8 @@ if [ "${lstrstn}" != "${currstn}" ] && [ ${curyear} != ${iniyear} ] ; then
    echo "PREVIOUS : ${currst}"
    echo "EXIT lt_archive execution."
    exit 1
+fi
+
 fi
 
 remain=`expr ${curyear} % ${RSTARFREQ}` || remain=0
